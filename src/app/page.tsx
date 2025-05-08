@@ -4,7 +4,7 @@ import Image from "next/image";
 import React, { useCallback, useEffect, useState } from "react";
 import axios from 'axios';
 import '@ant-design/v5-patch-for-react-19';
-import { Col, Empty, Input, message, Row } from "antd";
+import { Col, Empty, Input, message, Row, Spin } from "antd";
 import debounce from 'lodash/debounce';
 
 interface dataProps {
@@ -20,7 +20,7 @@ export default function Home() {
   const [data, setData] = useState<dataProps[]>([]);
   const [allData, setAllData] = useState<dataProps[]>([]);
   const [keyWord, setKeyWord] = useState("");
-  const [flag, setFlag] = useState(false);
+ const [loading,setLoading] = useState(true);
 
   const Card: React.FC<dataProps> = (data: dataProps) => {
     return (
@@ -43,19 +43,20 @@ export default function Home() {
   }
 
   useEffect(() => {
+    setLoading(true);
     axios.get('http://api.authclass.com/user/v1/course').then((res) => {
       if (res.status === 200) {
         if (res.data.data && Array.isArray(res.data.data)) {
           setData(res.data.data)
           setAllData(res.data.data)
-          setFlag(true)
+          setLoading(false);
         }
       } else {
         message.error('请求失败！')
       }
     }).catch(() => {
       message.error('请求失败！')
-    })
+    }).finally(()=> {setLoading(false)});
   }, [])
   const handleChange = useCallback(debounce((value: string | undefined) => {
     if (value) {
@@ -80,19 +81,23 @@ export default function Home() {
       </div>
       <div className="flex justify-center max-w-1280px">
         {
-          (data.length && flag)
-            ?
-            <Row gutter={[50, 50]} className="w-[1280px]">
-              {
-                data.map((item) =>
-                  <Col xs={{span: 24}} sm={{ span: 12 }} lg={{ span: 8 }} xl={{ span: 6 }} key={item.id}>
-                    <Card {...item} />
-                  </Col>
-                )
-              }
-            </Row>
-            :
-            <Empty />
+          loading ?
+
+          <Spin size="large" />
+          :
+          (data.length)
+          ?
+          <Row gutter={[50, 50]} className="w-[1280px]">
+            {
+              data.map((item) =>
+                <Col xs={{span: 24}} sm={{ span: 12 }} lg={{ span: 8 }} xl={{ span: 6 }} key={item.id}>
+                  <Card {...item} />
+                </Col>
+              )
+            }
+          </Row>
+          :
+          <Empty />
         }
       </div>
     </div>
